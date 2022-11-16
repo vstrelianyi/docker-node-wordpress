@@ -6,12 +6,14 @@ networks:
 
 services:
 
+  # NGINX
   nginx-service:
     container_name: nginx
     image: nginx:latest
     ports:
       - '80:80'
-      - '8443:8443'
+      - '8080:8080'
+
     volumes:
       - ./nginx:/etc/nginx/conf.d
       - ./logs/nginx:/var/log/nginx
@@ -26,6 +28,7 @@ services:
     networks:
       - node-wordpress
 
+  # WORDPRESS
   wordpress-service:
     container_name: wordpress-fpm
     image: wordpress:6.1.0-fpm
@@ -48,6 +51,7 @@ services:
     networks:
       - node-wordpress
 
+  # DB
   db-service:
     container_name: db
     image: mysql
@@ -67,6 +71,7 @@ services:
     networks:
       - node-wordpress
 
+  # PMA
   pma-service:
     container_name: pma
     image: phpmyadmin/phpmyadmin
@@ -84,6 +89,7 @@ services:
     networks:
       - node-wordpress
 
+  # NEXT
   next-service:
     container_name: next
 
