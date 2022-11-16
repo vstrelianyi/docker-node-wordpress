@@ -1,0 +1,111 @@
+version: '3.9'
+
+networks:
+  node-wordpress:
+    external: true
+
+services:
+
+  nginx-service:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - '80:80'
+      - '8443:8443'
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./logs/nginx:/var/log/nginx
+      - ./wordpress:/var/www/html/wordpress
+      # - ./next:/var/www/html/next
+    restart: always
+
+    depends_on:
+      - wordpress-service
+      - next-service
+
+    networks:
+      - node-wordpress
+
+  wordpress-service:
+    container_name: wordpress-fpm
+    image: wordpress:6.1.0-fpm
+    ports:
+      - '9000:9000'
+
+    environment:
+      - WORDPRESS_DB_HOST=db:3306
+      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
+      - WORDPRESS_DB_USER=${MYSQL_USER}
+      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
+    restart: always
+
+    volumes:
+      - ./wordpress:/var/www/html/wordpress
+
+    depends_on:
+      - db-service
+
+    networks:
+      - node-wordpress
+
+  db-service:
+    container_name: db
+    image: mysql
+    ports:
+      - '3306:3306'
+    restart: always
+
+    volumes:
+      - db-data:/var/lib/mysql
+
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+    networks:
+      - node-wordpress
+
+  pma-service:
+    container_name: pma
+    image: phpmyadmin/phpmyadmin
+
+    environment:
+      PMA_HOST: db
+
+    restart: always
+
+    ports:
+      - 8081:80
+    depends_on:
+      - db-service
+
+    networks:
+      - node-wordpress
+
+  next-service:
+    container_name: next
+
+    image: next-js
+
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+
+    depends_on:
+      - wordpress-service
+
+    ports:
+      - 3000:3000
+
+    restart: always
+
+    volumes:
+      - ./next:/var/www/html/next
+
+    networks:
+      - node-wordpress
+
+volumes:
+  db-data:
