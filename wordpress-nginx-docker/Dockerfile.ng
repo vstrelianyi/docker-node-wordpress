@@ -1,0 +1,11 @@
+# Install dependencies only when needed
+FROM nginx:1
+
+# update packages
+RUN apt-get update
+
+# install tzdata
+RUN apt-get install mc -y
+
+# set correct timezone
+ENV TZ="Europe/Kiev"

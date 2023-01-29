@@ -1,0 +1,48 @@
+# https://github.com/GaryClarke/nginx-php7.4-mysql8-node-docker-network
+# https://www.youtube.com/watch?v=ITOnpzkzlYM
+
+version: '3.9'
+
+networks:
+  nginx-node:
+    name: wp-wordpress
+    driver: bridge
+    # external: true
+
+services:
+
+  # bash -c "apt-get update && apt-get install mc -y"
+  # apk update
+  # apk add nano
+  # apk add mc
+  nginx-service:
+    image: nginx:stable-alpine
+
+    container_name: nginx-container
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/next.conf:/etc/nginx/conf.d/next.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # - ../wordpress:/var/www/project/public/wordpress
+
+    networks:
+      - nginx-node
+
+  next-service:
+    image: next-js
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.next
+    container_name: next-container
+
+    ports:
+      - "3000:3000"
+
+    restart: always
+
+    networks:
+      - nginx-node

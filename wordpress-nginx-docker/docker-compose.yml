@@ -1,0 +1,137 @@
+version: '3.9'
+
+networks:
+  wordpress:
+    name: wp-wordpress
+    driver: bridge
+
+services:
+
+  wordpress:
+    # default port 9000 (FastCGI)
+    image: wordpress:5-fpm
+    container_name: wp-wordpress
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - wordpress
+    depends_on:
+      - database
+    volumes:
+      - ${WORDPRESS_LOCAL_HOME}:/var/www/html/wordpress
+      - ${WORDPRESS_UPLOADS_CONFIG}:/usr/local/etc/php/conf.d/uploads.ini
+      # - /path/to/repo/myTheme/:/var/www/html/wp-content/themes/myTheme
+    environment:
+      - WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST}
+      - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
+      - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+
+  # apt-get update
+  # apt-get install mc
+  # apk update
+  # apk add nano
+  # apk add mc
+  nginx:
+    image: nginx:1
+    container_name: wp-nginx
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - wordpress
+    depends_on:
+      - wordpress
+
+    # default ports 80, 443 - expose mapping as needed to host
+    ports:
+      # next
+      # - "80:80"
+
+      # https://localhost/wp-admin/
+      - "8080:8080"    # http external ( browser ) -> internal nginx server port
+      - "8443:8443"   # https external ( browser ) -> internal nginx server port
+    volumes:
+      - ${WORDPRESS_LOCAL_HOME}:/var/www/html/wordpress
+      # - ${NEXT_LOCAL_HOME}:/var/www/html/next
+
+      - ${NGINX_CONF_WP}:/etc/nginx/conf.d/wordpress.conf
+      # - ${NGINX_CONF_NEXT}:/etc/nginx/conf.d/next.conf
+
+      - ${NGINX_SSL_CERTS}:/etc/ssl:ro
+      - ${NGINX_LOGS}:/var/log/nginx
+
+    # https://stackoverflow.com/questions/30063907/docker-compose-how-to-execute-multiple-commands
+    # command: bash -c "apt-get update && apt-get install mc -y"
+
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.ng
+
+  # NEXT
+  next-service:
+    container_name: next
+
+    image: next-js
+
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.next
+
+    # depends_on:
+    #   - wordpress
+
+    ports:
+      - 3000:3000
+
+    restart: unless-stopped
+
+    # env_file:
+    #   - .env
+
+    # volumes:
+    #   - ${NEXT_LOCAL_HOME}:/var/www/html/next
+
+    networks:
+      - wordpress
+
+  # docker-compose up --build database
+  database:
+    # default port 3306
+    image: mysql:8
+    container_name: wp-database
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - wordpress
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ${MYSQL_LOCAL_HOME}:/var/lib/mysql
+    command:
+      - '--default-authentication-plugin=mysql_native_password'
+
+  # adminer - bring up only as needed - bypasses nginx
+  # http://localhost:9000/?server=database&username=wordpress&db=wordpress&select=wp_options
+  # docker-compose up -d adminer
+  adminer:
+    # default port 8080
+    image: adminer:4
+    container_name: wp-adminer
+    restart: unless-stopped
+    networks:
+      - wordpress
+    depends_on:
+      - database
+    ports:
+      - "9000:8080"
+
+# https://stackoverflow.com/questions/41303760/how-to-name-a-volume-using-a-docker-compose-yml-file
+# volumes:
+#   db:
+#     external: true
