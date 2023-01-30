@@ -2,6 +2,8 @@
 # https://www.youtube.com/watch?v=ITOnpzkzlYM
 # https://github.com/mjstealey/wordpress-nginx-docker
 # https://steveholgado.com/nginx-for-nextjs/#passing-requests-to-our-nextjs-app
+# https://www.digitalocean.com/community/tutorials/how-to-install-wordpress-with-docker-compose
+# https://bobcares.com/blog/add-subdomain-nginx-digitalocean/
 
 # source .env
 version: '3.9'
@@ -27,8 +29,8 @@ services:
       # http external ( browser ) -> internal nginx server port
       - "80:80"
       - "443:443"
-      - "8080:8080"
-      - "8443:8443"
+      # - "8080:8080"
+      # - "8443:8443"
 
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -36,6 +38,8 @@ services:
       # - ./nginx/wordpress.conf:/etc/nginx/conf.d/wordpress.conf
 
       - ${WORDPRESS_LOCAL_HOME}:/var/www/html/wordpress
+
+      - ./subdomains/backend:/var/www/html/backend
 
       - ${NGINX_SSL_CERTS}:/etc/ssl:ro
       - ${NGINX_LOGS}:/var/log/nginx
@@ -112,6 +116,7 @@ services:
   # docker-compose up -d adminer-service
   # docker-compose up --build adminer-service
   # Server/host: database-service:3306
+  # http://185.69.153.211:9000/?server=database-service&username=admin&db=wordpress&select=wp_options
   adminer-service:
     # default port 8080
     image: adminer:4
